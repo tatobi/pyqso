@@ -80,12 +80,19 @@ class RecordDialog:
         self.sources["CALL"] = self.builder.get_object("qso_call_entry")
         self.builder.get_object("callsign_lookup").connect("clicked", self.callsign_lookup_callback)
 
+        # MY CALL
+        self.sources["STATION_CALLSIGN"] = self.builder.get_object("my_qso_call_entry")
+
         # DATE
         self.sources["QSO_DATE"] = self.builder.get_object("qso_date_entry")
         self.builder.get_object("select_date").connect("clicked", self.calendar_callback)
 
         # TIME
         self.sources["TIME_ON"] = self.builder.get_object("qso_time_entry")
+        self.builder.get_object("current_datetime").connect("clicked", self.set_current_datetime_callback)
+        
+        # TIME OFF
+        self.sources["TIME_OFF"] = self.builder.get_object("qso_time_off_entry")
         self.builder.get_object("current_datetime").connect("clicked", self.set_current_datetime_callback)
 
         # FREQ
@@ -104,8 +111,9 @@ class RecordDialog:
         self.sources["BAND"].set_active(0)  # Set an empty string as the default option.
 
         # MODE
+        self.modes = Modes().all
         self.sources["MODE"] = self.builder.get_object("qso_mode_combo")
-        for mode in sorted(MODES.keys()):
+        for mode in sorted(self.modes.keys()):
             self.sources["MODE"].append_text(mode)
         self.sources["MODE"].set_active(0)  # Set an empty string as the default option.
         self.sources["MODE"].connect("changed", self.on_mode_changed)
@@ -146,6 +154,9 @@ class RecordDialog:
 
         # NOTES
         self.sources["NOTES"] = self.builder.get_object("qso_notes_textview").get_buffer()
+        
+        # CMMENT
+        self.sources["COMMENT"] = self.builder.get_object("qso_comment_textview").get_buffer()
 
         # STATION INFORMATION
 
@@ -175,7 +186,10 @@ class RecordDialog:
 
         # GRIDSQUARE
         self.sources["GRIDSQUARE"] = self.builder.get_object("station_gridsquare_entry")
-
+        
+        # MY GRIDSQUARE
+        self.sources["MY_GRIDSQUARE"] = self.builder.get_object("my_station_gridsquare_entry")
+        
         # SATELLITE INFORMATION
 
         # SAT_NAME
@@ -199,12 +213,12 @@ class RecordDialog:
                     converted = self.convert_frequency(data, from_unit="MHz", to_unit=self.frequency_unit)
                     self.sources[field_names[i]].set_text(str(converted))
                 elif(field_names[i] == "MODE"):
-                    self.sources[field_names[i]].set_active(sorted(MODES.keys()).index(data))
+                    self.sources[field_names[i]].set_active(sorted(self.modes.keys()).index(data))
                     # Handle SUBMODE at the same time.
                     submode_data = record["submode"]
                     if(submode_data is None):
                         submode_data = ""
-                    self.sources["SUBMODE"].set_active(MODES[data].index(submode_data))
+                    self.sources["SUBMODE"].set_active(self.modes[data].index(submode_data))
                 elif(field_names[i] == "SUBMODE"):
                     # Skip, because this has been (or will be) handled when populating the MODE field.
                     continue
@@ -227,7 +241,7 @@ class RecordDialog:
                 mode = config.get(section, option)
             else:
                 mode = ""
-            self.sources["MODE"].set_active(sorted(MODES.keys()).index(mode))
+            self.sources["MODE"].set_active(sorted(self.modes.keys()).index(mode))
 
             # Submode
             (section, option) = ("records", "default_submode")
@@ -235,7 +249,7 @@ class RecordDialog:
                 submode = config.get(section, option)
             else:
                 submode = ""
-            self.sources["SUBMODE"].set_active(MODES[mode].index(submode))
+            self.sources["SUBMODE"].set_active(self.modes[mode].index(submode))
 
             # Power
             (section, option) = ("records", "default_power")
@@ -292,7 +306,7 @@ class RecordDialog:
             return self.sources["PROP_MODE"].get_active_text()
         elif(field_name == "BAND" or field_name == "QSL_SENT" or field_name == "QSL_RCVD"):
             return self.sources[field_name].get_active_text()
-        elif(field_name == "NOTES"):
+        elif(field_name == "NOTES" or field_name == "COMMENT"):
             (start, end) = self.sources[field_name].get_bounds()
             text = self.sources[field_name].get_text(start, end, True)
             return text
@@ -303,9 +317,9 @@ class RecordDialog:
         """ If the MODE field has changed its value, then fill the SUBMODE field with all the available SUBMODE options for that new MODE. """
         self.sources["SUBMODE"].get_model().clear()
         mode = combo.get_active_text()
-        for submode in MODES[mode]:
+        for submode in self.modes[mode]:
             self.sources["SUBMODE"].append_text(submode)
-        self.sources["SUBMODE"].set_active(MODES[mode].index(""))  # Set the submode to an empty string.
+        self.sources["SUBMODE"].set_active(self.modes[mode].index(""))  # Set the submode to an empty string.
         return
 
     def on_key_press(self, widget, event):
@@ -375,10 +389,10 @@ class RecordDialog:
             if(mode == "USB" or mode == "LSB"):
                 submode = mode
                 mode = "SSB"
-                self.sources["MODE"].set_active(sorted(MODES.keys()).index(mode))
-                self.sources["SUBMODE"].set_active(MODES[mode].index(submode))
+                self.sources["MODE"].set_active(sorted(self.modes.keys()).index(mode))
+                self.sources["SUBMODE"].set_active(self.modes[mode].index(submode))
             else:
-                self.sources["MODE"].set_active(sorted(MODES.keys()).index(mode))
+                self.sources["MODE"].set_active(sorted(self.modes.keys()).index(mode))
         except:
             logging.error("Could not obtain the current mode (e.g. FM, AM, CW) via Hamlib!")
 
@@ -487,6 +501,7 @@ class RecordDialog:
 
         self.sources["QSO_DATE"].set_text(dt.strftime("%Y%m%d"))
         self.sources["TIME_ON"].set_text(dt.strftime("%H%M"))
+        self.sources["TIME_OFF"].set_text(dt.strftime("%H%M"))
 
         return
 
