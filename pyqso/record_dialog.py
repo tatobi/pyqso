@@ -80,12 +80,19 @@ class RecordDialog:
         self.sources["CALL"] = self.builder.get_object("qso_call_entry")
         self.builder.get_object("callsign_lookup").connect("clicked", self.callsign_lookup_callback)
 
+        # MY CALL
+        self.sources["STATION_CALLSIGN"] = self.builder.get_object("my_qso_call_entry")
+
         # DATE
         self.sources["QSO_DATE"] = self.builder.get_object("qso_date_entry")
         self.builder.get_object("select_date").connect("clicked", self.calendar_callback)
 
         # TIME
         self.sources["TIME_ON"] = self.builder.get_object("qso_time_entry")
+        self.builder.get_object("current_datetime").connect("clicked", self.set_current_datetime_callback)
+        
+        # TIME OFF
+        self.sources["TIME_OFF"] = self.builder.get_object("qso_time_off_entry")
         self.builder.get_object("current_datetime").connect("clicked", self.set_current_datetime_callback)
 
         # FREQ
@@ -147,6 +154,9 @@ class RecordDialog:
 
         # NOTES
         self.sources["NOTES"] = self.builder.get_object("qso_notes_textview").get_buffer()
+        
+        # CMMENT
+        self.sources["COMMENT"] = self.builder.get_object("qso_comment_textview").get_buffer()
 
         # STATION INFORMATION
 
@@ -176,7 +186,10 @@ class RecordDialog:
 
         # GRIDSQUARE
         self.sources["GRIDSQUARE"] = self.builder.get_object("station_gridsquare_entry")
-
+        
+        # MY GRIDSQUARE
+        self.sources["MY_GRIDSQUARE"] = self.builder.get_object("my_station_gridsquare_entry")
+        
         # SATELLITE INFORMATION
 
         # SAT_NAME
@@ -293,7 +306,7 @@ class RecordDialog:
             return self.sources["PROP_MODE"].get_active_text()
         elif(field_name == "BAND" or field_name == "QSL_SENT" or field_name == "QSL_RCVD"):
             return self.sources[field_name].get_active_text()
-        elif(field_name == "NOTES"):
+        elif(field_name == "NOTES" or field_name == "COMMENT"):
             (start, end) = self.sources[field_name].get_bounds()
             text = self.sources[field_name].get_text(start, end, True)
             return text
@@ -488,6 +501,7 @@ class RecordDialog:
 
         self.sources["QSO_DATE"].set_text(dt.strftime("%Y%m%d"))
         self.sources["TIME_ON"].set_text(dt.strftime("%H%M"))
+        self.sources["TIME_OFF"].set_text(dt.strftime("%H%M"))
 
         return
 
